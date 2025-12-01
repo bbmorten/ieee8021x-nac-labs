@@ -1,0 +1,16 @@
+# Python / editor trash (if you extend labs)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+*.log
+
+# Certs & keys (generated locally)
+labs/**/certs/*.key
+labs/**/certs/*.pem
+labs/**/certs/*.crt
+labs/**/certs/*.csr
+labs/**/certs/*.p12
+labs/**/certs/*.der

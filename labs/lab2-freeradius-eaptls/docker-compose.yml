@@ -1,0 +1,30 @@
+services:
+  radius-tls:
+    build: ./freeradius
+    container_name: nac-lab-radius-tls
+    ports:
+      - "18120:1812/udp"
+      - "18130:1813/udp"
+    networks:
+      - nac-lab-tls-net
+    volumes:
+      - certs:/shared-certs
+
+  supplicant-tls:
+    build: ./supplicant
+    container_name: nac-lab-supplicant-tls
+    depends_on:
+      - radius-tls
+    networks:
+      - nac-lab-tls-net
+    volumes:
+      - certs:/shared-certs:ro
+    tty: true
+    stdin_open: true
+
+networks:
+  nac-lab-tls-net:
+    driver: bridge
+
+volumes:
+  certs:

@@ -1,0 +1,3 @@
+# Simple local user database for testing PEAP/MSCHAPv2
+
+testuser Cleartext-Password := "P@ssw0rd"

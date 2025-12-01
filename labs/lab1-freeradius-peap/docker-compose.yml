@@ -1,0 +1,22 @@
+services:
+  radius:
+    build: ./freeradius
+    container_name: nac-lab-radius
+    ports:
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    networks:
+      - nac-lab-net
+  supplicant:
+    build: ./supplicant
+    container_name: nac-lab-supplicant
+    depends_on:
+      - radius
+    networks:
+      - nac-lab-net
+    tty: true
+    stdin_open: true
+
+networks:
+  nac-lab-net:
+    driver: bridge
