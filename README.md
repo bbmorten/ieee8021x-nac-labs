@@ -3,12 +3,17 @@
 This repository contains hands‑on labs for learning IEEE 802.1X and NAC concepts
 using **FreeRADIUS** in Docker and a Linux supplicant container.
 
-The first lab focuses on **EAP over RADIUS** using **PEAP (EAP‑MSCHAPv2)**, which
-is easier to get running quickly. A skeleton for certificate generation is also
-included so you can extend the lab to **EAP‑TLS**.
-
 > ⚠️ These labs are for learning and testing only. Do **not** use these sample
 > configs in production.
+
+---
+
+## Labs Included
+
+| Lab | Description | Authentication |
+|-----|-------------|----------------|
+| `lab1-freeradius-peap` | PEAP/MSCHAPv2 with username/password | Easier to get started |
+| `lab2-freeradius-eaptls` | Full EAP-TLS with CA, server, and client certs | More secure, enterprise-grade |
 
 ---
 
@@ -16,37 +21,36 @@ included so you can extend the lab to **EAP‑TLS**.
 
 ```text
 ieee8021x-nac-labs/
-  README.md
-  LICENSE
-  .gitignore
-  docs/
-    01_overview.md
-    02_eap_radius.md
-    03_lab1_freeradius_peap.md
-  labs/
-    lab1-freeradius-peap/
-      docker-compose.yml
-      freeradius/
-        Dockerfile
-        clients.conf
-        users
-      supplicant/
-        Dockerfile
-        eapol_test_peap.conf
-        run-eapol-test.sh
-      certs/
-        generate-certs.sh
-        openssl.cnf
+├── docs/
+│   ├── 01_overview.md           # NAC concepts overview
+│   ├── 02_eap_radius.md         # EAP and RADIUS protocol details
+│   ├── 03_lab1_freeradius_peap.md
+│   └── 04_lab2_freeradius_eaptls.md
+├── labs/
+│   ├── lab1-freeradius-peap/    # PEAP/MSCHAPv2 lab
+│   │   ├── docker-compose.yml
+│   │   ├── freeradius/
+│   │   ├── supplicant/
+│   │   └── certs/
+│   └── lab2-freeradius-eaptls/  # EAP-TLS lab
+│       ├── docker-compose.yml
+│       ├── freeradius/
+│       ├── supplicant/
+│       └── certs/
+├── README.md
+└── LICENSE
 ```
 
 ---
 
-## Quickstart
-
-Prereqs:
+## Prerequisites
 
 - Docker + Docker Compose
-- Linux or macOS shell (Windows WSL2 is fine)
+- Linux or macOS shell (Windows WSL2 works too)
+
+---
+
+## Quickstart: Lab 1 (PEAP/MSCHAPv2)
 
 ### 1. Go to the lab directory
 
@@ -71,10 +75,7 @@ This starts:
 docker compose exec supplicant run-eapol-test.sh
 ```
 
-You should see output similar to:
-
-- `SUCCESS` when auth passes
-- Detailed EAP/RADIUS exchange in the logs
+You should see `✓ Authentication SUCCESS` at the end.
 
 ### 4. Watch RADIUS debug logs
 
@@ -82,30 +83,114 @@ You should see output similar to:
 docker compose logs -f radius
 ```
 
----
-
-## Next Steps
-
-- Read `docs/03_lab1_freeradius_peap.md` for a step‑by‑step walk‑through.
-- Inspect `labs/lab1-freeradius-peap/freeradius/*` for RADIUS config.
-- Inspect `labs/lab1-freeradius-peap/supplicant/*` for supplicant config.
-- Use `certs/generate-certs.sh` as a starting point for an EAP‑TLS lab.
-
-You can push this repo directly to GitHub:
+### 5. Stop the lab
 
 ```bash
-git init
-git add .
-git commit -m "Add IEEE 802.1X / NAC FreeRADIUS Docker lab"
-git remote add origin git@github.com:<your-user>/ieee8021x-nac-labs.git
-git push -u origin main
+docker compose down
 ```
-
 
 ---
 
-## Labs Included
+## Quickstart: Lab 2 (EAP-TLS)
 
-- `lab1-freeradius-peap` – PEAP/MSCHAPv2 with FreeRADIUS + Docker
-- `lab2-freeradius-eaptls` – Full EAP-TLS lab with its own CA, server, and client certs
+```bash
+cd labs/lab2-freeradius-eaptls
+docker compose up -d --build
+```
 
+This starts:
+
+- `radius-tls` – FreeRADIUS server configured for EAP-TLS
+- `supplicant-tls` – Linux container with `eapol_test` and client certificate
+
+Note: First startup may take ~30 seconds for DH parameter generation.
+
+Run an EAP-TLS authentication:
+
+```bash
+docker compose exec supplicant-tls run-eapol-test.sh
+```
+
+You should see `✓ Authentication SUCCESS` at the end.
+
+Watch RADIUS debug logs:
+
+```bash
+docker compose logs -f radius-tls
+```
+
+Stop the lab:
+
+```bash
+docker compose down
+```
+
+### Regenerating Certificates
+
+Lab 2 generates certificates automatically at startup. To regenerate:
+
+```bash
+docker compose down -v   # Remove volume with old certs
+docker compose up -d --build
+```
+
+---
+
+## Test Credentials
+
+| Lab | Identity | Secret |
+|-----|----------|--------|
+| Lab 1 | `testuser` | `P@ssw0rd` |
+| Lab 2 | `client01` | (certificate-based) |
+
+RADIUS shared secrets:
+
+- Lab 1: `testing123`
+- Lab 2: `tlssecret`
+
+---
+
+## Documentation
+
+- [01_overview.md](docs/01_overview.md) – NAC concepts overview
+- [02_eap_radius.md](docs/02_eap_radius.md) – EAP and RADIUS protocol details
+- [03_lab1_freeradius_peap.md](docs/03_lab1_freeradius_peap.md) – Lab 1 walkthrough
+- [04_lab2_freeradius_eaptls.md](docs/04_lab2_freeradius_eaptls.md) – Lab 2 walkthrough
+
+---
+
+## Architecture Notes
+
+### eapol_test
+
+Both labs build `eapol_test` from wpa_supplicant source code because the Debian
+`wpasupplicant` package does not include this testing tool.
+
+### Certificate Sharing (Lab 2)
+
+Lab 2 uses a Docker volume to share certificates between containers:
+
+- RADIUS server generates CA, server cert, and client cert at startup
+- Certificates are stored in a shared volume
+- Supplicant reads client cert and CA from the shared volume
+- This ensures both containers trust the same CA
+
+---
+
+## Troubleshooting
+
+1. **Certificate issues (Lab 2)**: Remove volume and rebuild:
+
+   ```bash
+   docker compose down -v && docker compose up -d --build
+   ```
+
+2. **Connection refused**: Ensure containers are running:
+
+   ```bash
+   docker compose ps
+   ```
+
+3. **Auth failures**: Check RADIUS debug logs for detailed error messages
+
+4. **Shared secret mismatch**: Verify `clients.conf` matches supplicant config
