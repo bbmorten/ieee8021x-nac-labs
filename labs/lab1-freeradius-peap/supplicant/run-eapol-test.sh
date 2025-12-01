@@ -5,6 +5,8 @@ RADIUS_SERVER="${RADIUS_SERVER:-radius}"
 RADIUS_PORT="${RADIUS_PORT:-1812}"
 RADIUS_SECRET="${RADIUS_SECRET:-testing123}"
 CONFIG_FILE="${CONFIG_FILE:-/etc/wpa_supplicant/eapol_test_peap.conf}"
+CAPTURE="${CAPTURE:-false}"
+CAPTURE_FILE="${CAPTURE_FILE:-/captures/peap-auth-$(date +%Y%m%d-%H%M%S).pcap}"
 
 # Resolve hostname to IP address (eapol_test requires IP, not hostname)
 if echo "${RADIUS_SERVER}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
@@ -22,8 +24,20 @@ echo "EAPOL Test - RADIUS Authentication Client"
 echo "============================================"
 echo "Server: ${RADIUS_SERVER} (${RADIUS_IP}):${RADIUS_PORT}"
 echo "Config: ${CONFIG_FILE}"
+if [ "${CAPTURE}" = "true" ]; then
+    echo "Capture: ${CAPTURE_FILE}"
+fi
 echo "============================================"
 echo ""
+
+# Start tcpdump in background if capture is enabled
+if [ "${CAPTURE}" = "true" ]; then
+    echo "[*] Starting packet capture..."
+    tcpdump -i any -w "${CAPTURE_FILE}" "host ${RADIUS_IP} and udp port ${RADIUS_PORT}" &
+    TCPDUMP_PID=$!
+    # Give tcpdump time to start
+    sleep 1
+fi
 
 eapol_test -c "${CONFIG_FILE}" \
            -a "${RADIUS_IP}" \
@@ -32,6 +46,15 @@ eapol_test -c "${CONFIG_FILE}" \
            -t 10 -r 3
 
 exit_code=$?
+
+# Stop tcpdump if it was started
+if [ "${CAPTURE}" = "true" ] && [ -n "${TCPDUMP_PID}" ]; then
+    sleep 1  # Allow final packets to be captured
+    kill "${TCPDUMP_PID}" 2>/dev/null || true
+    wait "${TCPDUMP_PID}" 2>/dev/null || true
+    echo ""
+    echo "[*] Packet capture saved to: ${CAPTURE_FILE}"
+fi
 
 echo ""
 if [ $exit_code -eq 0 ]; then

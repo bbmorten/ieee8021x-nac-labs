@@ -177,6 +177,35 @@ Lab 2 uses a Docker volume to share certificates between containers:
 
 ---
 
+## Packet Capture
+
+Both labs support capturing RADIUS traffic in pcap format using tcpdump. This is useful for analyzing the EAP/RADIUS protocol exchange in Wireshark.
+
+### Capture Traffic with Authentication
+
+```bash
+# Lab 1 - PEAP/MSCHAPv2
+docker compose exec supplicant env CAPTURE=true run-eapol-test.sh
+
+# Lab 2 - EAP-TLS
+docker compose exec supplicant-tls env CAPTURE=true run-eapol-test.sh
+```
+
+Capture files are saved to `./captures/` directory:
+
+- Lab 1: `captures/peap-auth-YYYYMMDD-HHMMSS.pcap`
+- Lab 2: `captures/eaptls-auth-YYYYMMDD-HHMMSS.pcap`
+
+### View Captures in Wireshark
+
+```bash
+wireshark captures/peap-auth-*.pcap
+```
+
+Use Wireshark's RADIUS dissector to decode the packets. You can also decode the EAP payload within the RADIUS packets.
+
+---
+
 ## Troubleshooting
 
 1. **Certificate issues (Lab 2)**: Remove volume and rebuild:

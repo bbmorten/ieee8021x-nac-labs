@@ -14,6 +14,11 @@ services:
       - radius
     networks:
       - nac-lab-net
+    volumes:
+      - ./captures:/captures
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     tty: true
     stdin_open: true
 

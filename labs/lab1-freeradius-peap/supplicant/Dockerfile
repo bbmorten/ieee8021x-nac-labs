@@ -49,8 +49,12 @@ RUN apt-get update && \
       libnl-genl-3-200 \
       libnl-route-3-200 \
       libssl1.1 \
-      libdbus-1-3 && \
+      libdbus-1-3 \
+      tcpdump && \
     rm -rf /var/lib/apt/lists/*
+
+# Create directory for pcap captures
+RUN mkdir -p /captures
 
 # Copy configs
 COPY eapol_test_peap.conf /etc/wpa_supplicant/eapol_test_peap.conf

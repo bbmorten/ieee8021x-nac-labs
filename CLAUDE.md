@@ -55,6 +55,18 @@ docker compose exec supplicant run-eapol-test.sh
 docker compose exec supplicant-tls run-eapol-test.sh
 ```
 
+### Capturing Traffic (pcap)
+
+```bash
+# Lab 1 - with packet capture
+docker compose exec supplicant env CAPTURE=true run-eapol-test.sh
+
+# Lab 2 - with packet capture
+docker compose exec supplicant-tls env CAPTURE=true run-eapol-test.sh
+```
+
+Captures are saved to `./captures/` directory in pcap format.
+
 ### Viewing RADIUS Logs
 ```bash
 # Lab 1

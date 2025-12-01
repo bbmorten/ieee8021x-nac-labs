@@ -19,6 +19,10 @@ services:
       - nac-lab-tls-net
     volumes:
       - certs:/shared-certs:ro
+      - ./captures:/captures
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     tty: true
     stdin_open: true
 
